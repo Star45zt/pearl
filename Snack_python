@@ -1,0 +1,139 @@
+import random
+import pygame
+import sys
+from pygame.locals import *
+Snakespend = 4     #游戏速度
+Window_Width = 800  #游戏范围宽度
+Window_High = 500   #游戏窗口高度
+Cell_Size = 20      #每一个的尺寸大小
+
+
+Cell_W = Window_Width / Cell_Size  #宽的格子数
+Cell_H = Window_High / Cell_Size   #高的格子数
+
+#各种有可能用的的颜色
+White = (255, 255, 255)
+Black = (0, 0, 0)
+Red = (255, 0, 0)
+Green = (0, 255, 0)
+DARKGreen = (0, 155, 0)
+DARKGRAY = (40, 40, 40)
+YELLOW = (255, 255, 0)
+Red_DARK = (150, 0, 0)
+BLUE = (0, 0, 255)
+BLUE_DARK = (0, 0, 150)
+BackGround = Black
+#四个方向
+UP = 'up'
+DOWN = 'down'
+RIGHT = 'right'
+LEFT = 'left'
+#蛇头
+HEAD = 0
+
+
+def main():
+    global SnakespeedCLOCK, DISPLAYSURF, BASICFONT
+    pygame.init()
+    SnakespeedCLOCK = pygame.time.Clock()  # 定义一个变量来控制速度
+    DISPLAYSURF = pygame.display.set_mode((Window_Width, Window_High))  # 设置窗口大小
+    BASICFONT = pygame.font.Font('freesansbold.ttf', 18)  # 设置游戏内字体
+    pygame.display.set_caption('Snake')  # 设置游戏窗口标题
+
+    while True:
+        RunGame()  # 调用参数
+
+
+def RunGame():
+    startX = random.randint(5, Cell_W - 6)  # 初始化蛇的位置，且蛇的长度为3
+    startY = random.randint(5, Cell_H - 6)
+    SnakeBody = [{'x': startX, 'y': startY},
+                 {'x': startX - 1, 'y': startY},
+                 {'x': startX - 2, 'y': startY}]
+    direCtion = RIGHT  # 蛇初始方向为向右
+    apple = {'x': random.randint(0, Cell_W - 1), 'y': random.randint(0, Cell_H - 1)}  # 初始化食物的位置
+    while True:
+        # 检测按键事件
+        for event in pygame.event.get():
+            if event.type == QUIT:  # 接收到退出时间时推出
+                pygame.quit()
+                sys.exit()
+            elif event.type == KEYDOWN:  # 判断按键事件，用WSAD和方向键判断方向
+                if (event.key == K_UP or event.key == K_w) and direCtion != DOWN:
+                    direCtion = UP
+                elif (event.key == K_DOWN or event.key == K_s) and direCtion != UP:
+                    direCtion = DOWN
+                elif (event.key == K_RIGHT or event.key == K_d) and direCtion != LEFT:
+                    direCtion = RIGHT
+                elif (event.key == K_LEFT or event.key == K_a) and direCtion != RIGHT:
+                    direCtion = LEFT
+                elif event.key == K_ESCAPE:  # 按下Esc时退出
+                    pygame.quit()
+                    sys.exit()
+
+        if SnakeBody[HEAD]['x'] == -1 or SnakeBody[HEAD]['x'] == Cell_W or SnakeBody[HEAD]['y'] == -1 or \
+                SnakeBody[HEAD]['y'] == Cell_H:
+            return  # 当前头的位置超出了窗口边界，退出
+        for Body in SnakeBody[1:]:
+            if Body['x'] == SnakeBody[HEAD]['x'] and Body['y'] == SnakeBody[HEAD]['y']:
+                return  # 当前头的位置余身体碰到了，退出
+
+        if SnakeBody[HEAD]['x'] == apple['x'] and SnakeBody[HEAD]['y'] == apple['y']:  # 如果头的位置和食物位置相同就再随机生成一个食物
+            apple = {'x': random.randint(0, Cell_W - 1), 'y': random.randint(0, Cell_H - 1)}
+        else:  # 否则把蛇的尾巴删掉
+            del SnakeBody[-1]
+
+        # 根据蛇的方向产生新的蛇头
+        if direCtion == UP:
+            newHeard = {'x': SnakeBody[HEAD]['x'],
+                        'y': SnakeBody[HEAD]['y'] - 1}
+        elif direCtion == DOWN:
+            newHeard = {'x': SnakeBody[HEAD]['x'],
+                        'y': SnakeBody[HEAD]['y'] + 1}
+        elif direCtion == RIGHT:
+            newHeard = {'x': SnakeBody[HEAD]['x'] + 1,
+                        'y': SnakeBody[HEAD]['y']}
+        elif direCtion == LEFT:
+            newHeard = {'x': SnakeBody[HEAD]['x'] - 1,
+                        'y': SnakeBody[HEAD]['y']}
+        SnakeBody.insert(0, newHeard)  # 将新的头插入到蛇的最前面
+        DISPLAYSURF.fill(BackGround)  # 将窗口填充为背景颜色
+        DrawSnakeBody(SnakeBody)  # 画蛇
+        DrawApple(apple)  # 画食物
+        DrawLine()  # 画网格线
+        DrawScreen(len(SnakeBody) - 3)  # 画分数
+        pygame.display.update()  # 将画的图形显示在窗面上
+        SnakespeedCLOCK.tick(Snakespend)  # 设置刷新速度
+def DrawScreen(Screen) :  #显示分数
+    ScreenBuf = BASICFONT.render('Screen : %s' %(Screen),True,YELLOW)
+    ScreenRect = ScreenBuf.get_rect()
+    ScreenRect.topleft = (Window_Width - 120 , 0)
+    DISPLAYSURF.blit(ScreenBuf,ScreenRect)
+
+
+def DrawSnakeBody(SnakeBody):  #显示蛇
+    for body in SnakeBody :
+        x = body['x'] * Cell_Size #将每一节的具体左边求出来
+        y = body['y'] * Cell_Size
+        BodyRect = pygame.Rect(x,y,Cell_Size,Cell_Size) #将坐标转换为最小单位方格
+        pygame.draw.rect(DISPLAYSURF,DARKGreen,BodyRect) #在窗口画出来
+        BodyInnerRect = pygame.Rect(x + 4, y + 4, Cell_Size - 8, Cell_Size - 8) #将格子中间再选出来
+        pygame.draw.rect(DISPLAYSURF,Green,BodyInnerRect) #再画出来
+
+def DrawApple(apple): #画食物，方法和画蛇一样
+    x = apple['x'] * Cell_Size
+    y = apple['y'] * Cell_Size
+    appleRect = pygame.Rect(x,y,Cell_Size,Cell_Size)
+    pygame.draw.rect(DISPLAYSURF,Red,appleRect)
+
+def DrawLine():  #画线
+    for x in range(0, Window_Width, Cell_Size):
+        pygame.draw.line(DISPLAYSURF, DARKGRAY, (x, 0), (x, Window_High))
+    for y in range(0, Window_High, Cell_Size):
+        pygame.draw.line(DISPLAYSURF, DARKGRAY, (0, y), (Window_Width, y))
+
+if __name__ == '__main__' :
+    try :
+        main()
+    except SystemExit :
+        pass
